@@ -1,0 +1,60 @@
+# ============================================================================
+# Project Doe — Default Configuration
+# ============================================================================
+
+# Camera / video source
+camera:
+  source: 0                    # 0 = default webcam, or path to video file
+
+# YOLO detector
+detector:
+  model_path: "yolov8n.pt"    # YOLOv8 nano — fast, good for prototyping
+  confidence_threshold: 0.5
+  device: "cpu"                # "cpu", "cuda", "mps"
+
+# Object tracker
+tracker:
+  max_disappeared: 30          # Frames before dropping a lost track
+  max_distance: 80.0           # Max pixel distance for centroid matching
+
+# Distress analysis
+distress:
+  motion_weight: 0.4           # Weight for erratic movement score
+  submersion_weight: 0.4       # Weight for submersion detection
+  stationary_weight: 0.2       # Weight for motionless floating
+  min_track_seconds: 1.0       # Min observation before scoring
+  fps: 15.0                    # Expected FPS (for time-based calculations)
+
+# Alert thresholds
+alerting:
+  warning_threshold: 0.4       # Score to trigger WARNING
+  critical_threshold: 0.7      # Score to trigger CRITICAL
+  warning_frames: 5            # Consecutive frames above warning threshold
+  critical_frames: 10          # Consecutive frames above critical threshold
+  cooldown_seconds: 30.0       # Cooldown after alert before re-alerting
+
+# Serial communication (microcontroller)
+serial:
+  enabled: false               # Set to true when hardware is connected
+  port: "COM3"                 # Windows: COM3, Linux: /dev/ttyUSB0
+  baud_rate: 115200
+
+# Deployment control
+control:
+  auto_arm: false              # Auto-arm on startup (use with caution)
+
+# Web dashboard
+dashboard:
+  enabled: true
+  host: "0.0.0.0"
+  port: 8000
+
+# Logging
+logging:
+  log_dir: "logs"
+  snapshot_on_alert: true
+
+# Pipeline
+pipeline:
+  target_fps: 15
+  show_preview: true           # Show OpenCV window with annotated feed
