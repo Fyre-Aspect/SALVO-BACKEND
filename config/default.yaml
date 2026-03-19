@@ -37,7 +37,7 @@ alerting:
 serial:
   enabled: false               # Set to true when hardware is connected
   port: "COM4"                 # Windows: COM3, Linux: /dev/ttyUSB0
-  baud_rate: 9500
+  baud_rate: 9600
 
 # Deployment control
 control:
