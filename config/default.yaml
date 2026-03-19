@@ -36,8 +36,8 @@ alerting:
 # Serial communication (microcontroller)
 serial:
   enabled: false               # Set to true when hardware is connected
-  port: "COM3"                 # Windows: COM3, Linux: /dev/ttyUSB0
-  baud_rate: 115200
+  port: "COM4"                 # Windows: COM3, Linux: /dev/ttyUSB0
+  baud_rate: 9500
 
 # Deployment control
 control:
@@ -47,7 +47,7 @@ control:
 dashboard:
   enabled: true
   host: "0.0.0.0"
-  port: 8000
+  port: 3000
 
 # Logging
 logging:
