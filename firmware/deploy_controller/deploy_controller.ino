@@ -26,9 +26,9 @@
 #include <Servo.h>
 
 // Pin assignments — adjust for your board
-const int SERVO_PIN = 9;
+const int SERVO_PIN = 10;
 const int STATUS_LED = 13;
-const int ARMED_LED = 12;    // Optional: LED to show armed state
+const int ARMED_LED = 12;  
 
 // Servo positions
 const int SERVO_LOCKED = 0;
