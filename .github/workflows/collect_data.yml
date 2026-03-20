@@ -1,0 +1,44 @@
+name: Data Collection and Testing
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch: # Allows you to run this workflow manually from the Actions tab
+
+jobs:
+  build_and_collect:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+          
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          
+      - name: Create required directories
+        run: |
+          mkdir -p logs/snapshots
+          
+      - name: Run Tests (simulating detections)
+        run: |
+          # Replace this with your actual simulation/test command
+          pytest tests/ -v
+          
+      - name: Upload Snapshots and Logs as Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: detection-snapshots-and-logs
+          path: |
+            logs/snapshots/*.jpg
+            logs/*.jsonl
+          retention-days: 14 # Keeps the logs on GitHub for 14 days
