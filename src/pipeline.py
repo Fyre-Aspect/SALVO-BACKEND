@@ -12,7 +12,8 @@ from src.dashboard.server import DashboardServer
 from src.distress.analyzer import DistressAnalyzer, DistressConfig
 from src.event_bus import EventBus
 from src.logging_.event_logger import EventLogger
-from src.models.schemas import Alert, FrameData
+from src.models.schemas import Alert, AlertLevel, FrameData
+from src.notifier.webhook import WebhookConfig, WebhookNotifier
 from src.tracking.tracker import PersonTracker
 from src.vision.camera import FrameGrabber
 from src.vision.detector import PersonDetector
@@ -92,6 +93,21 @@ class Pipeline:
                 port=dash_cfg.get("port", 8000),
             )
 
+        # Webhook notifier — delivers distress signal to the website backend
+        webhook_cfg = config.get("webhook", {})
+        self._notifier = WebhookNotifier(
+            WebhookConfig(
+                enabled=webhook_cfg.get("enabled", False),
+                url=webhook_cfg.get("url", ""),
+                auth_token=webhook_cfg.get("auth_token", ""),
+                timeout_seconds=webhook_cfg.get("timeout_seconds", 5.0),
+                include_snapshot=webhook_cfg.get("include_snapshot", True),
+                snapshot_scale=webhook_cfg.get("snapshot_scale", 0.5),
+                only_critical=webhook_cfg.get("only_critical", True),
+                source_id=webhook_cfg.get("source_id", "drone-1"),
+            )
+        )
+
         # Logging
         log_cfg = config.get("logging", {})
         self._event_logger = EventLogger(
@@ -160,7 +176,12 @@ class Pipeline:
                 if alerts:
                     self._event_bus.publish("alert.triggered", alerts)
 
-                # 6. Handle deployment
+                # 6. Notify website backend on distress (non-blocking)
+                for alert in alerts:
+                    if alert.level == AlertLevel.CRITICAL:
+                        self._notifier.notify(alert, frame_data.frame)
+
+                # 7. Handle deployment
                 for alert in alerts:
                     cmd = self._controller.handle_alert(alert)
                     if cmd:
@@ -222,6 +243,7 @@ class Pipeline:
         self._running = False
         self._grabber.release()
         self._serial_comm.close()
+        self._notifier.close()
         self._event_logger.close()
         if self._show_preview:
             cv2.destroyAllWindows()

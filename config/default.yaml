@@ -49,6 +49,17 @@ dashboard:
   host: "0.0.0.0"
   port: 3000
 
+# Webhook — pushes distress alerts to the website backend
+webhook:
+  enabled: false               # Flip to true once the website endpoint is live
+  url: ""                      # e.g. "https://api.your-site.com/distress"
+  auth_token: ""               # Optional bearer token
+  timeout_seconds: 5.0
+  include_snapshot: true       # Embed a base64 JPEG of the alert frame
+  snapshot_scale: 0.5
+  only_critical: true          # Only fire on CRITICAL, not WARNING
+  source_id: "drone-1"
+
 # Logging
 logging:
   log_dir: "logs"
