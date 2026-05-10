@@ -118,10 +118,12 @@ def test_min_hold_frames_suppresses_one_off_arm_raise():
 
 def test_drowning_posture_head_below_shoulders_with_motion():
     c = _make_classifier(min_hold=1)
-    # Build wrist motion history first
-    for x in [200, 240, 200, 240, 200, 240]:
+    # Build wrist motion history with HIGH amplitude (>60 px) so it clears
+    # the production drowning_motion_px threshold (60). Walking arm-swing
+    # is well below this and must NOT trigger the rule.
+    for x in [200, 290, 200, 290, 200, 290]:
         kps_motion = _kp({
-            0: (320, 250),    # head BELOW shoulders
+            0: (320, 250),    # head clearly BELOW shoulders (250 > 200+15)
             5: (280, 200),
             6: (360, 200),
             9: (x, 220),
@@ -129,3 +131,35 @@ def test_drowning_posture_head_below_shoulders_with_motion():
         })
         res = c._classify_keypoints(track_id=6, kp=kps_motion)
     assert res.gesture == GestureType.DROWNING_POSTURE
+
+
+def test_drowning_does_not_fire_when_nose_keypoint_is_missing():
+    """Distant pedestrians often have an undetected nose. Rule must require
+    POSITIVE evidence of head-below-shoulders, not absence of detection."""
+    c = _make_classifier(min_hold=1)
+    for x in [200, 290, 200, 290, 200, 290]:
+        kps = _kp({
+            # nose (idx 0) intentionally omitted -> low confidence
+            5: (280, 200),
+            6: (360, 200),
+            9: (x, 220),
+            10: (x + 100, 220),
+        })
+        res = c._classify_keypoints(track_id=7, kp=kps)
+    assert res.gesture == GestureType.NONE
+
+
+def test_drowning_does_not_fire_on_walking_arm_swing():
+    """Walking arm-swing produces ~30-50 px lateral wrist motion. The
+    drowning rule's 60 px threshold must reject it."""
+    c = _make_classifier(min_hold=1)
+    for x in [300, 340, 300, 340, 300, 340]:  # ~40 px swing
+        kps = _kp({
+            0: (320, 250),     # head below shoulders (worst case)
+            5: (280, 200),
+            6: (360, 200),
+            9: (x, 220),
+            10: (x + 100, 220),
+        })
+        res = c._classify_keypoints(track_id=8, kp=kps)
+    assert res.gesture == GestureType.NONE

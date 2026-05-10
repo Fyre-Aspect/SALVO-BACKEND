@@ -47,7 +47,8 @@ def build_live_config(camera: int, webhook_url: str | None) -> dict:
             "min_hold_frames": 6,
             "wave_history_frames": 12,
             "wave_min_amplitude_px": 25.0,
-            "drowning_motion_px": 18.0,
+            "drowning_head_drop_px": 15.0,
+            "drowning_motion_px": 60.0,
         },
         # Real-world thresholds — walking around does NOT fire these.
         # The gesture classifier bypasses them when a real SOS is seen.

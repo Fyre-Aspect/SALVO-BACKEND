@@ -51,7 +51,11 @@ class GestureConfig:
     min_hold_frames: int = 6           # ~0.4s at 15 FPS
     wave_history_frames: int = 12      # window for detecting oscillation
     wave_min_amplitude_px: float = 25.0
-    drowning_motion_px: float = 18.0
+    # Drowning: nose must be at least this many pixels BELOW the shoulder line
+    drowning_head_drop_px: float = 15.0
+    # Drowning: wrist motion must exceed this — high enough to exclude
+    # ordinary walking arm-swing.
+    drowning_motion_px: float = 60.0
     iou_match_threshold: float = 0.20
 
 
@@ -219,8 +223,16 @@ class PoseGestureClassifier:
                     track_id, GestureType.SOS_SINGLE_ARM, 0.8
                 )
 
-        # 4) Drowning posture: head AT or below shoulder line + erratic wrists
-        if not head_normal:
+        # 4) Drowning posture — STRICT: requires positive evidence, not the
+        #    absence of a head keypoint (which is common for distant pedestrians).
+        #    Conditions: nose visible AND clearly below the shoulder line AND
+        #    at least one wrist visible AND wrist motion above a high threshold
+        #    that ordinary walking arm-swing cannot reach.
+        nose_below_shoulders = (
+            nose is not None and nose[1] >= shoulder_y + cfg.drowning_head_drop_px
+        )
+        any_wrist_visible = lw is not None or rw is not None
+        if nose_below_shoulders and any_wrist_visible:
             motion = max(
                 self._wave_amplitude(track_id, 0),
                 self._wave_amplitude(track_id, 1),
@@ -254,6 +266,11 @@ class PoseGestureClassifier:
 
         streaks[gesture] += 1
         if streaks[gesture] >= self._config.min_hold_frames:
+            if streaks[gesture] == self._config.min_hold_frames:
+                logger.info(
+                    "Gesture confirmed: track=%d type=%s conf=%.2f",
+                    track_id, gesture.value, confidence,
+                )
             return GestureResult(gesture, confidence)
         return GestureResult(GestureType.NONE, 0.0)
 

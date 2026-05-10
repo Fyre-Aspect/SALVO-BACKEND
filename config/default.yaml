@@ -35,7 +35,9 @@ gesture:
   min_hold_frames: 6           # Frames a gesture must persist (~0.4s @ 15 FPS)
   wave_history_frames: 12      # Window for detecting wave oscillation
   wave_min_amplitude_px: 25.0  # Min lateral wrist sweep to count as a wave
-  drowning_motion_px: 18.0     # Min wrist motion to confirm drowning thrash
+  drowning_head_drop_px: 15.0  # Nose must be this many px BELOW shoulder line
+  drowning_motion_px: 60.0     # Min wrist motion to confirm drowning thrash
+                               # (above ordinary walking arm-swing range)
 
 # Alert thresholds — high so casual walking never fires;
 # gesture detection bypasses these via gesture_score_floor.

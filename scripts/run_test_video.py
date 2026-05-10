@@ -40,16 +40,29 @@ def build_demo_config(video: Path, webhook_url: str | None) -> dict:
             "min_track_seconds": 0.5,
             "fps": 15.0,
         },
-        # Low thresholds so the demo reliably trips a distress signal
+        # Production thresholds. Heuristic motion alone should NOT fire these
+        # on a walking video — only a recognized SOS gesture should reach
+        # the gesture_score_floor (0.95) needed to cross critical (0.85).
         "alerting": {
-            "warning_threshold": 0.05,
-            "critical_threshold": 0.10,
-            "warning_frames": 2,
-            "critical_frames": 4,
-            "cooldown_seconds": 5.0,
+            "warning_threshold": 0.6,
+            "critical_threshold": 0.85,
+            "warning_frames": 4,
+            "critical_frames": 6,
+            "cooldown_seconds": 15.0,
+        },
+        "gesture": {
+            "enabled": True,
+            "model_path": "yolov8n-pose.pt",
+            "device": "cpu",
+            "detection_confidence": 0.4,
+            "min_hold_frames": 6,
+            "wave_history_frames": 12,
+            "wave_min_amplitude_px": 25.0,
+            "drowning_head_drop_px": 15.0,
+            "drowning_motion_px": 60.0,
         },
         "serial": {"enabled": False},
-        "control": {"auto_arm": True},
+        "control": {"auto_arm": False},
         "dashboard": {"enabled": False},
         "webhook": {
             "enabled": bool(webhook_url),

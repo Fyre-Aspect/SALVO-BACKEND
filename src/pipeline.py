@@ -82,8 +82,11 @@ class Pipeline:
                     wave_min_amplitude_px=gesture_cfg.get(
                         "wave_min_amplitude_px", 25.0
                     ),
+                    drowning_head_drop_px=gesture_cfg.get(
+                        "drowning_head_drop_px", 15.0
+                    ),
                     drowning_motion_px=gesture_cfg.get(
-                        "drowning_motion_px", 18.0
+                        "drowning_motion_px", 60.0
                     ),
                 )
             )
