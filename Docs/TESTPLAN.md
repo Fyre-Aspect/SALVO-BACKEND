@@ -21,7 +21,7 @@
 ### Prerequisites
 
 ```powershell
-cd C:\Users\aamir\Coding\Project-Doe
+cd C:\Users\arunp\OneDrive\Desktop\Project-Doe
 .\venv\Scripts\Activate.ps1
 ```
 
