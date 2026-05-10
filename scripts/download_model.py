@@ -4,9 +4,10 @@ from ultralytics import YOLO
 
 
 def main():
-    print("Downloading YOLOv8n model...")
-    model = YOLO("yolov8n.pt")
-    print(f"Model downloaded: {model.model_name}")
+    print("Downloading YOLOv8n (person detection)...")
+    YOLO("yolov8n.pt")
+    print("Downloading YOLOv8n-pose (gesture / SOS detection)...")
+    YOLO("yolov8n-pose.pt")
     print("Ready to use.")
 
 

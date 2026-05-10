@@ -10,6 +10,7 @@ from src.control.controller import DeployController
 from src.control.serial_comm import BaseSerialComm, MockSerialComm
 from src.dashboard.server import DashboardServer
 from src.distress.analyzer import DistressAnalyzer, DistressConfig
+from src.distress.pose_classifier import GestureConfig, PoseGestureClassifier
 from src.event_bus import EventBus
 from src.logging_.event_logger import EventLogger
 from src.models.schemas import Alert, AlertLevel, FrameData
@@ -54,8 +55,38 @@ class Pipeline:
                 stationary_weight=distress_cfg.get("stationary_weight", 0.2),
                 min_track_seconds=distress_cfg.get("min_track_seconds", 1.0),
                 fps=distress_cfg.get("fps", 15.0),
+                gesture_score_floor=distress_cfg.get(
+                    "gesture_score_floor", 0.95
+                ),
             )
         )
+
+        # Pose-based gesture classifier (SOS, drowning posture, etc.)
+        gesture_cfg = config.get("gesture", {})
+        self._gesture_enabled = gesture_cfg.get("enabled", True)
+        self._gesture_classifier: PoseGestureClassifier | None = None
+        if self._gesture_enabled:
+            self._gesture_classifier = PoseGestureClassifier(
+                GestureConfig(
+                    model_path=gesture_cfg.get(
+                        "model_path", "yolov8n-pose.pt"
+                    ),
+                    device=gesture_cfg.get("device", "cpu"),
+                    detection_confidence=gesture_cfg.get(
+                        "detection_confidence", 0.4
+                    ),
+                    min_hold_frames=gesture_cfg.get("min_hold_frames", 6),
+                    wave_history_frames=gesture_cfg.get(
+                        "wave_history_frames", 12
+                    ),
+                    wave_min_amplitude_px=gesture_cfg.get(
+                        "wave_min_amplitude_px", 25.0
+                    ),
+                    drowning_motion_px=gesture_cfg.get(
+                        "drowning_motion_px", 18.0
+                    ),
+                )
+            )
 
         # Alerting
         alert_cfg = config.get("alerting", {})
@@ -158,20 +189,30 @@ class Pipeline:
                 tracked = self._tracker.update(detections)
                 self._event_bus.publish("track.updated", tracked)
 
-                # 4. Analyze distress
+                # 4a. Pose-based gesture classification
+                gestures = {}
+                if self._gesture_classifier is not None:
+                    gestures = self._gesture_classifier.classify(
+                        frame_data, tracked
+                    )
+
+                # 4b. Analyze distress (gesture takes priority over heuristic)
                 distress_events = self._analyzer.analyze(
-                    tracked, frame_data.frame_id
+                    tracked, frame_data.frame_id, gestures
                 )
                 self._event_bus.publish("distress.scored", distress_events)
 
                 # 5. Evaluate alerts
                 alerts = self._alert_manager.evaluate(distress_events)
 
-                # Attach bounding boxes to alerts
+                # Attach bounding boxes + gesture type to alerts
                 track_map = {t.track_id: t for t in tracked}
+                event_map = {e.track_id: e for e in distress_events}
                 for alert in alerts:
                     if alert.track_id in track_map:
                         alert.bbox = track_map[alert.track_id].bbox
+                    if alert.track_id in event_map:
+                        alert.gesture = event_map[alert.track_id].gesture
 
                 if alerts:
                     self._event_bus.publish("alert.triggered", alerts)
@@ -280,8 +321,10 @@ class Pipeline:
 
             label = f"ID:{tid}"
             if tid in distress_map:
-                score = distress_map[tid].distress_score
-                label += f" D:{score:.0%}"
+                evt = distress_map[tid]
+                label += f" D:{evt.distress_score:.0%}"
+                if evt.gesture.value != "none":
+                    label += f" [{evt.gesture.value.upper()}]"
 
             cv2.putText(
                 frame,

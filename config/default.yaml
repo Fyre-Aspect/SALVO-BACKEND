@@ -17,21 +17,34 @@ tracker:
   max_disappeared: 30          # Frames before dropping a lost track
   max_distance: 80.0           # Max pixel distance for centroid matching
 
-# Distress analysis
+# Distress analysis (heuristic — water-context features)
 distress:
   motion_weight: 0.4           # Weight for erratic movement score
   submersion_weight: 0.4       # Weight for submersion detection
   stationary_weight: 0.2       # Weight for motionless floating
-  min_track_seconds: 1.0       # Min observation before scoring
+  min_track_seconds: 1.0       # Min observation before heuristic scoring
   fps: 15.0                    # Expected FPS (for time-based calculations)
+  gesture_score_floor: 0.95    # Score floor when a gesture is recognized
 
-# Alert thresholds
+# Pose-based gesture classifier (SOS, drowning posture, etc.)
+gesture:
+  enabled: true
+  model_path: "yolov8n-pose.pt"
+  device: "cpu"
+  detection_confidence: 0.4
+  min_hold_frames: 6           # Frames a gesture must persist (~0.4s @ 15 FPS)
+  wave_history_frames: 12      # Window for detecting wave oscillation
+  wave_min_amplitude_px: 25.0  # Min lateral wrist sweep to count as a wave
+  drowning_motion_px: 18.0     # Min wrist motion to confirm drowning thrash
+
+# Alert thresholds — high so casual walking never fires;
+# gesture detection bypasses these via gesture_score_floor.
 alerting:
-  warning_threshold: 0.4       # Score to trigger WARNING
-  critical_threshold: 0.7      # Score to trigger CRITICAL
-  warning_frames: 5            # Consecutive frames above warning threshold
-  critical_frames: 10          # Consecutive frames above critical threshold
-  cooldown_seconds: 30.0       # Cooldown after alert before re-alerting
+  warning_threshold: 0.6       # Score to trigger WARNING
+  critical_threshold: 0.85     # Score to trigger CRITICAL
+  warning_frames: 4            # Consecutive frames above warning threshold
+  critical_frames: 6           # Consecutive frames above critical threshold
+  cooldown_seconds: 15.0       # Cooldown after alert before re-alerting
 
 # Serial communication (microcontroller)
 serial:

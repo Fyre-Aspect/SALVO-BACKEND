@@ -93,6 +93,17 @@ class TrackedPerson:
 
 
 # ---------------------------------------------------------------------------
+# Gesture
+# ---------------------------------------------------------------------------
+class GestureType(str, Enum):
+    NONE = "none"
+    SOS_BOTH_ARMS = "sos_both_arms"
+    SOS_SINGLE_ARM = "sos_single_arm"
+    CROSSED_ARMS_OVERHEAD = "crossed_arms_overhead"
+    DROWNING_POSTURE = "drowning_posture"
+
+
+# ---------------------------------------------------------------------------
 # Distress Event
 # ---------------------------------------------------------------------------
 @dataclass
@@ -104,6 +115,8 @@ class DistressEvent:
     stationary_score: float
     timestamp: float
     frame_id: int
+    gesture: GestureType = GestureType.NONE
+    gesture_confidence: float = 0.0
 
     def to_dict(self) -> dict:
         return {
@@ -114,6 +127,8 @@ class DistressEvent:
             "stationary_score": self.stationary_score,
             "timestamp": self.timestamp,
             "frame_id": self.frame_id,
+            "gesture": self.gesture.value,
+            "gesture_confidence": self.gesture_confidence,
         }
 
 
@@ -140,6 +155,7 @@ class Alert:
     timestamp: float
     frame_id: int
     bbox: BoundingBox
+    gesture: GestureType = GestureType.NONE
 
     def to_dict(self) -> dict:
         return {
@@ -149,6 +165,7 @@ class Alert:
             "timestamp": self.timestamp,
             "frame_id": self.frame_id,
             "bbox": self.bbox.to_dict(),
+            "gesture": self.gesture.value,
         }
 
 
