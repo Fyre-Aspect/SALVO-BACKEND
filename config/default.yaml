@@ -66,8 +66,8 @@ dashboard:
 
 # Webhook — pushes distress alerts to the website backend
 webhook:
-  enabled: false               # Flip to true once the website endpoint is live
-  url: ""                      # e.g. "https://api.your-site.com/distress"
+  enabled: true                # SALVO webapp endpoint is live at localhost:3000
+  url: "http://localhost:3000/api/distress"
   auth_token: ""               # Optional bearer token
   timeout_seconds: 5.0
   include_snapshot: true       # Embed a base64 JPEG of the alert frame
