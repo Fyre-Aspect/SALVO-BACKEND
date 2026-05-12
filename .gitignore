@@ -33,3 +33,6 @@ Thumbs.db
 
 # Config overrides
 config/local.yaml
+
+# Test videos — often large; keep local only
+test_videos/

@@ -117,6 +117,7 @@ class DistressEvent:
     frame_id: int
     gesture: GestureType = GestureType.NONE
     gesture_confidence: float = 0.0
+    face_emotion_score: float = 0.0
 
     def to_dict(self) -> dict:
         return {
@@ -129,6 +130,7 @@ class DistressEvent:
             "frame_id": self.frame_id,
             "gesture": self.gesture.value,
             "gesture_confidence": self.gesture_confidence,
+            "face_emotion_score": self.face_emotion_score,
         }
 
 

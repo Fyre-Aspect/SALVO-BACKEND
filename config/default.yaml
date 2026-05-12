@@ -9,7 +9,7 @@ camera:
 # YOLO detector
 detector:
   model_path: "yolov8n.pt"    # YOLOv8 nano — fast, good for prototyping
-  confidence_threshold: 0.5
+  confidence_threshold: 0.45  # Lowered from 0.5 — catches partially submerged persons
   device: "cpu"                # "cpu", "cuda", "mps"
 
 # Object tracker
@@ -19,9 +19,10 @@ tracker:
 
 # Distress analysis (heuristic — water-context features)
 distress:
-  motion_weight: 0.4           # Weight for erratic movement score
-  submersion_weight: 0.4       # Weight for submersion detection
-  stationary_weight: 0.2       # Weight for motionless floating
+  motion_weight: 0.35          # Weight for erratic movement score
+  submersion_weight: 0.35      # Weight for submersion detection
+  stationary_weight: 0.15      # Weight for motionless floating
+  face_emotion_weight: 0.15    # Weight for facial expression score (requires deepface)
   min_track_seconds: 1.0       # Min observation before heuristic scoring
   fps: 15.0                    # Expected FPS (for time-based calculations)
   gesture_score_floor: 0.95    # Score floor when a gesture is recognized
@@ -35,9 +36,16 @@ gesture:
   min_hold_frames: 6           # Frames a gesture must persist (~0.4s @ 15 FPS)
   wave_history_frames: 12      # Window for detecting wave oscillation
   wave_min_amplitude_px: 25.0  # Min lateral wrist sweep to count as a wave
-  drowning_head_drop_px: 15.0  # Nose must be this many px BELOW shoulder line
-  drowning_motion_px: 60.0     # Min wrist motion to confirm drowning thrash
-                               # (above ordinary walking arm-swing range)
+  drowning_head_drop_px: 12.0  # Nose must be this many px BELOW shoulder line (lowered from 15)
+  drowning_motion_px: 50.0     # Min wrist motion to confirm drowning thrash (lowered from 60)
+
+# Facial expression distress scoring (optional — requires: pip install deepface tf-keras)
+face_emotion:
+  enabled: true
+  analyze_every_n_frames: 5    # Run DeepFace every N frames per track (CPU budget)
+  face_crop_top_ratio: 0.28    # Top 28% of person bbox = face region
+  min_face_dimension_px: 32    # Skip crops smaller than this (distant/occluded persons)
+  enforce_detection: false     # Don't error if no face found in the crop
 
 # Alert thresholds — high so casual walking never fires;
 # gesture detection bypasses these via gesture_score_floor.

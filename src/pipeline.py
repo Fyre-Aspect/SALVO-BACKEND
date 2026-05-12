@@ -10,6 +10,7 @@ from src.control.controller import DeployController
 from src.control.serial_comm import BaseSerialComm, MockSerialComm
 from src.dashboard.server import DashboardServer
 from src.distress.analyzer import DistressAnalyzer, DistressConfig
+from src.distress.face_emotion import FaceEmotionAnalyzer, FaceEmotionConfig
 from src.distress.pose_classifier import GestureConfig, PoseGestureClassifier
 from src.event_bus import EventBus
 from src.logging_.event_logger import EventLogger
@@ -53,11 +54,24 @@ class Pipeline:
                 motion_weight=distress_cfg.get("motion_weight", 0.4),
                 submersion_weight=distress_cfg.get("submersion_weight", 0.4),
                 stationary_weight=distress_cfg.get("stationary_weight", 0.2),
+                face_emotion_weight=distress_cfg.get("face_emotion_weight", 0.0),
                 min_track_seconds=distress_cfg.get("min_track_seconds", 1.0),
                 fps=distress_cfg.get("fps", 15.0),
                 gesture_score_floor=distress_cfg.get(
                     "gesture_score_floor", 0.95
                 ),
+            )
+        )
+
+        # Facial expression distress analyzer (requires deepface — optional)
+        face_cfg = config.get("face_emotion", {})
+        self._face_emotion = FaceEmotionAnalyzer(
+            FaceEmotionConfig(
+                enabled=face_cfg.get("enabled", True),
+                analyze_every_n_frames=face_cfg.get("analyze_every_n_frames", 5),
+                face_crop_top_ratio=face_cfg.get("face_crop_top_ratio", 0.28),
+                min_face_dimension_px=face_cfg.get("min_face_dimension_px", 32),
+                enforce_detection=face_cfg.get("enforce_detection", False),
             )
         )
 
@@ -199,9 +213,21 @@ class Pipeline:
                         frame_data, tracked
                     )
 
-                # 4b. Analyze distress (gesture takes priority over heuristic)
+                # 4b. Facial expression distress scoring (optional — needs deepface)
+                face_emotions: dict[int, float] = {}
+                if self._face_emotion.available:
+                    for person in tracked:
+                        if person.frames_since_seen == 0:
+                            b = person.bbox
+                            face_emotions[person.track_id] = self._face_emotion.score(
+                                frame_data.frame,
+                                person.track_id,
+                                b.x1, b.y1, b.x2, b.y2,
+                            )
+
+                # 4c. Analyze distress (gesture takes priority over heuristic)
                 distress_events = self._analyzer.analyze(
-                    tracked, frame_data.frame_id, gestures
+                    tracked, frame_data.frame_id, gestures, face_emotions
                 )
                 self._event_bus.publish("distress.scored", distress_events)
 
@@ -231,9 +257,12 @@ class Pipeline:
                     if cmd:
                         self._event_bus.publish("deploy.commanded", cmd)
 
-                # Cleanup stale alert states
+                # Cleanup stale alert and face emotion states
                 active_ids = {t.track_id for t in tracked}
                 self._alert_manager.cleanup_stale(active_ids)
+                for tid in list(face_emotions):
+                    if tid not in active_ids:
+                        self._face_emotion.cleanup_track(tid)
 
                 # FPS calculation
                 fps_counter += 1

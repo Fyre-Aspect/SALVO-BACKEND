@@ -20,6 +20,8 @@ class DistressConfig:
     motion_weight: float = 0.4
     submersion_weight: float = 0.4
     stationary_weight: float = 0.2
+    # Added on top of heuristic when face emotion is available (0.0 = disabled)
+    face_emotion_weight: float = 0.0
     min_track_seconds: float = 1.0
     fps: float = 15.0
     # When a gesture is detected, the heuristic score is replaced by this floor
@@ -38,10 +40,12 @@ class DistressAnalyzer:
         tracked_persons: list[TrackedPerson],
         frame_id: int,
         gestures: dict[int, GestureResult] | None = None,
+        face_emotions: dict[int, float] | None = None,
     ) -> list[DistressEvent]:
         events: list[DistressEvent] = []
         now = time.time()
         gestures = gestures or {}
+        face_emotions = face_emotions or {}
 
         for person in tracked_persons:
             if person.frames_since_seen > 0:
@@ -64,12 +68,14 @@ class DistressAnalyzer:
             stationary = compute_stationary_duration(
                 person.positions, self._config.fps
             )
+            face_emotion = face_emotions.get(person.track_id, 0.0)
 
             cfg = self._config
             heuristic_score = min(
                 cfg.motion_weight * motion
                 + cfg.submersion_weight * submersion
-                + cfg.stationary_weight * stationary,
+                + cfg.stationary_weight * stationary
+                + cfg.face_emotion_weight * face_emotion,
                 1.0,
             )
 
@@ -97,6 +103,7 @@ class DistressAnalyzer:
                     frame_id=frame_id,
                     gesture=gesture_type,
                     gesture_confidence=gesture_conf,
+                    face_emotion_score=face_emotion,
                 )
             )
 
