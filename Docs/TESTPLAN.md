@@ -69,8 +69,8 @@ Run:
 python scripts/run_live_demo.py
 ```
 
-A preview window opens showing your webcam. The dashboard is at
-`http://localhost:3000`.
+A preview window opens showing your webcam. The operator dashboard is at
+`http://localhost:8000`.
 
 ### Test B1 — Walking around does NOT fire
 

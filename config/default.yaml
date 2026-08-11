@@ -66,11 +66,12 @@ serial:
 control:
   auto_arm: false              # Auto-arm on startup (use with caution)
 
-# Web dashboard
+# Web dashboard (operator view — separate from the SALVO-PWA-APP webapp,
+# which runs on port 3000. Keep this off 3000 or the two collide.)
 dashboard:
   enabled: true
   host: "0.0.0.0"
-  port: 3000
+  port: 8000
 
 # Webhook — pushes distress alerts to the website backend
 webhook:

@@ -61,7 +61,7 @@ def build_live_config(camera: int, webhook_url: str | None) -> dict:
         },
         "serial": {"enabled": False},
         "control": {"auto_arm": True},
-        "dashboard": {"enabled": True, "host": "0.0.0.0", "port": 3000},
+        "dashboard": {"enabled": True, "host": "0.0.0.0", "port": 8000},
         "webhook": {
             "enabled": bool(webhook_url),
             "url": webhook_url or "",
